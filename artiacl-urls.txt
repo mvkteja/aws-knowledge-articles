@@ -1,0 +1,11 @@
+https://1billiontech.com/blog_AWS_KMS.php
+https://jayendrapatil.com/tag/kms/
+https://hackernoon.com/a-deep-dive-into-aws-key-management-service-kms
+https://www.linkedin.com/pulse/securing-encryption-keys-cloud-part-1-aws-kms-thando-toto
+https://www.archerimagine.com/articles/aws/aws-kms.html
+https://www.researchgate.net/figure/A-description-of-AWS-KMS-from-a-users-perspective_fig1_335658232
+https://dev.to/chiragdm/aws-kms-envelope-encryption-3689
+https://aws.amazon.com/blogs/security/tag/aws-kms/page/2/
+https://aws.plainenglish.io/aws-developer-associate-certification-summary-notes-part-10-fb1f3009a1cc
+https://www.encryptionconsulting.com/how-secure-are-key-management-service-of-amazon
+https://digitalcloud.training/aws-kms/
