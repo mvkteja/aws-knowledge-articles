@@ -9,3 +9,8 @@ https://aws.amazon.com/blogs/security/tag/aws-kms/page/2/
 https://aws.plainenglish.io/aws-developer-associate-certification-summary-notes-part-10-fb1f3009a1cc
 https://www.encryptionconsulting.com/how-secure-are-key-management-service-of-amazon
 https://digitalcloud.training/aws-kms/
+
+market place:
+https://aws.amazon.com/blogs/awsmarketplace/distribute-aws-marketplace-license-entitlements-to-your-organization-id/?sc_channel=EL&sc_campaign=Demo_Deep_Dive_2021_vid&sc_medium=YouTube&sc_content=Video9798&sc_detail=MANAGEMENT_GOVERNANCE&sc_country=US
+https://aws.amazon.com/blogs/mt/using-aws-control-tower-aws-service-catalog-and-aws-marketplace-to-deploy-aws-marketplace-license-subscriptions/?sc_channel=EL&sc_campaign=Demo_Deep_Dive_2021_vid&sc_medium=YouTube&sc_content=Video9798&sc_detail=MANAGEMENT_GOVERNANCE&sc_country=US
+https://docs.aws.amazon.com/general/latest/gr/aws-marketplace.html#aws-marketplace_region
