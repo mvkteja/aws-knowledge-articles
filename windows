@@ -5,3 +5,6 @@ cd $dir
 (New-Object System.Net.WebClient).DownloadFile("https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/windows_amd64/AmazonSSMAgentSetup.exe", $dir + "\AmazonSSMAgentSetup.exe")
 Start-Process .\AmazonSSMAgentSetup.exe -ArgumentList @("/q", "/log", "install.log") -Wait
 </powershell>
+
+
+https://gist.github.com/tomfanning/1eb299915ca061e9a937ae3efc77c1c2
