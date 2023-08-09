@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: To provision to ec2 instance
+Resources:
+    myLaunchTemplate:
+        Type: AWS::EC2::LaunchTemplate
+        Properties:
+            LaunchTemplateName: TestLaunchTemplate
+            LaunchTemplateData:
+              ImageId: ami-02a89066c48741345
+              InstanceType: t2.micro
+              IamInstanceProfile:
+                Arn: !Sub "arn:aws:iam::${AWS::AccountId}:instance-profile/ssm-agent"
+              SecurityGroupIds:
+                - sg-09f2fd1b3a628b20c
+              UserData:
+                Fn::Base64: !Sub |
+                  #!/bin/bash
+                  def install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+                  systemctl enable amazon-ssm-agent
+                  systemctl start amazon-ssm-agent
+                  yum update -y
+                  yum install httpd -y
+                  systemctl start httpd
+                  systemctl enable httpd
+                  echo "<h1>This is test</h1>" > /var/www/html/index.html
+
+            
+    ApplicationLoadBalancer : 
+        Type : 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+        Properties :
+          Name: ALBTest
+          Scheme: internal
+          IpAddressType: ipv4
+          SecurityGroups: 
+              - sg-0bbddbbd63baa55d2 
+          Subnets : 
+              - subnet-0f94e126305e193c6
+              - subnet-019f3051337572dc1
+    ALBTargetGroup : 
+        Type : 'AWS::ElasticLoadBalancingV2::TargetGroup'
+        Properties : 
+          Port : '80'
+          Protocol : HTTP
+          TargetType: instance
+          VpcId: 'vpc-047eb9c912fa2e118'
+          HealthCheckIntervalSeconds : '30'
+          HealthCheckProtocol: HTTP
+          HealthCheckTimeoutSeconds : '5'
+          HealthCheckPath: /index.html
+          HealthyThresholdCount: 3
+          UnhealthyThresholdCount: 3
+          Matcher: 
+              HttpCode: 200		
+
+    ALBlistener:
+        Type: "AWS::ElasticLoadBalancingV2::Listener"
+        Properties:
+          DefaultActions:
+            - Type: "forward"
+              TargetGroupArn: !Ref ALBTargetGroup
+          LoadBalancerArn: !Ref ApplicationLoadBalancer
+          Port: 80
+          Protocol: HTTP
+
+    ASGroup:
+      Type: AWS::AutoScaling::AutoScalingGroup
+      Properties:
+        VPCZoneIdentifier:
+          - subnet-0f94e126305e193c6
+          - subnet-019f3051337572dc1
+        LaunchTemplate:
+          LaunchTemplateId: !Ref myLaunchTemplate
+          Version: !GetAtt myLaunchTemplate.LatestVersionNumber
+        MaxSize: '5'
+        MinSize: '1'
+        TargetGroupARNs:
+          - !Ref ALBTargetGroup
