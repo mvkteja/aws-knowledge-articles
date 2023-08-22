@@ -1,0 +1,11 @@
+To change the AWS Region, use the Region selector in the upper-right corner of the page.
+1. Navigate to the AWS Key Management Service KMS.
+2. On the left side panel of the AWS Console, navigate to KMS / Customer managed keys, and click Create key.
+3. Select Symmetric. Under Advanced options, make sure the below default options are selected, Then click Next.
+Key material origin = KMS
+Regionality = Single-Region key
+4. Type an Alias for the KMS key and click Next.
+5. Specify the users or roles as the key administrators, and then click Next.
+6. Specify the users or roles as grantee for the key, and then click Next.
+7. Review the resource policy generated for your key. In the Statement section of the Key policy, append the text with the following
+Choose Finish to create the KMS key.
