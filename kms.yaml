@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Security: KMS customer managed CMK for AWS services'
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+    - Label:
+        default: 'KMS Parameters'
+      Parameters:
+        - pService
+        - pKeySpec
+        - pKeyUsage
+        - pEnabled
+        - pPendingWindowInDays
+Parameters:
+  pService:
+    Description: 'Which AWS service is allowed to use this CMK'
+    Type: String
+    AllowedValues:
+      - 'ALL_SERVICES'
+      - ec2
+      - s3
+    Default: ALL_SERVICES
+  pKeySpec:
+    Description: 'Specify the type of the CMK.'
+    Type: String
+    AllowedValues:
+      - SYMMETRIC_DEFAULT
+      - RSA_2048
+      - RSA_3072
+      - RSA_4096
+    Default: SYMMETRIC_DEFAULT
+  pKeyUsage:
+    Description: 'Which cryptographic operations should the CMK support?'
+    Type: String
+    AllowedValues:
+      - ENCRYPT_DECRYPT
+      - SIGN_VERIFY
+    Default: ENCRYPT_DECRYPT
+  pKeyStatus:
+    Description: 'Specify the state of the CMK.'
+    Type: String
+    AllowedValues:
+      - yes
+      - no
+    Default: true
+  pPendingWindowInDays:
+    Description: 'Specifies the number of days (between 7 to 30) in the waiting period before AWS KMS deletes this KMS key'
+    Type: Number
+
+Conditions:
+  cServiceAllServices: !Equals [!Ref pService, 'ALL_SERVICES']
+  cKeyStatus: !Equals [!Ref pKeyStatus, 'yes']
+  cSymmetricKey: !Equals [!Ref pKeySpec, 'SYMMETRIC_DEFAULT']
+  cPendingWindowInDays: !Not [!Equals [ " ", !Ref pPendingWindowInDays ]]
+Resources:
+  Key:
+    Type: 'AWS::KMS::Key'
+    Properties:
+      EnableKeyRotation: !If [cSymmetricKey, true, false]
+      KeySpec: !Ref pKeySpec
+      KeyUsage: !Ref pKeyUsage
+      Enabled: !If [cKeyStatus, true, false]
+      PendingWindowInDays: 
+        'Fn::If':
+          - cPendingWindowInDays
+          - !Ref pPendingWindowInDays
+          - !Ref AWS::NoValue      
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+          Action: 'kms:*'
+          Resource: '*'
+        - !If
+          - cServiceAllServices
+          - Effect: Allow
+            Principal:
+              AWS: '*'
+            Action:
+            - 'kms:Encrypt'
+            - 'kms:Decrypt'
+            - 'kms:ReEncrypt*'
+            - 'kms:GenerateDataKey*'
+            - 'kms:CreateGrant'
+            - 'kms:ListGrants'
+            - 'kms:DescribeKey'
+            Resource: '*'
+            Condition:
+              StringEquals:
+                'kms:CallerAccount': !Ref 'AWS::AccountId'
+          - !Ref 'AWS::NoValue'
+  KeyAlias:
+    Type: 'AWS::KMS::Alias'
+    Properties:
+      AliasName: !Sub 'alias/${AWS::StackName}'
+      TargetKeyId: !Ref Key
+
+Outputs:
+  KeyId:
+    Description: 'Key id.'
+    Value: !Ref Key
+    Export:
+      Name: !Sub '${AWS::StackName}-KeyId'
+  KeyArn:
+    Description: 'Key ARN.'
+    Value: !GetAtt 'Key.Arn'
+    Export:
+      Name: !Sub '${AWS::StackName}-KeyArn'
