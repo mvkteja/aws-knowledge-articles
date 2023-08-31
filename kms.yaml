@@ -40,16 +40,16 @@ Parameters:
     Description: 'Specify the state of the CMK.'
     Type: String
     AllowedValues:
-      - yes
-      - no
-    Default: true
+      - enabled
+      - disabled
+    Default: enabled
   pPendingWindowInDays:
     Description: 'Specifies the number of days (between 7 to 30) in the waiting period before AWS KMS deletes this KMS key'
     Type: Number
 
 Conditions:
   cServiceAllServices: !Equals [!Ref pService, 'ALL_SERVICES']
-  cKeyStatus: !Equals [!Ref pKeyStatus, 'yes']
+  cKeyStatus: !Equals [!Ref pKeyStatus, 'enabled']
   cSymmetricKey: !Equals [!Ref pKeySpec, 'SYMMETRIC_DEFAULT']
   cPendingWindowInDays: !Not [!Equals [ " ", !Ref pPendingWindowInDays ]]
 Resources:
@@ -60,11 +60,11 @@ Resources:
       KeySpec: !Ref pKeySpec
       KeyUsage: !Ref pKeyUsage
       Enabled: !If [cKeyStatus, true, false]
-      PendingWindowInDays: 
-        'Fn::If':
-          - cPendingWindowInDays
-          - !Ref pPendingWindowInDays
-          - !Ref AWS::NoValue      
+#      PendingWindowInDays: 
+#        'Fn::If':
+#          - cPendingWindowInDays
+#          - !Ref pPendingWindowInDays
+#          - !Ref AWS::NoValue      
       KeyPolicy:
         Version: '2012-10-17'
         Statement:
