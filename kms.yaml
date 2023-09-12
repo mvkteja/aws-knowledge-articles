@@ -1,70 +1,79 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Security: KMS customer managed CMK for AWS services'
+Description: 'Security: KMS customer managed CMK for AWS services, a cloudonaut.io template'
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
     - Label:
         default: 'KMS Parameters'
       Parameters:
-        - pService
-        - pKeySpec
-        - pKeyUsage
-        - pEnabled
-        - pPendingWindowInDays
+      - pService
+      - pKeySpec
+      - pKeyUsage
+      - pKeystatus
+      - pPendingWindowInDays
 Parameters:
   pService:
-    Description: 'Which AWS service is allowed to use this CMK'
+    Description: 'Which AWS service is allowed to use this CMK (upper-case names define use-cases)'
     Type: String
     AllowedValues:
-      - 'ALL_SERVICES'
-      - ec2
-      - s3
+    - 'ALL_SERVICES'
+    - ssm
+    - ec2
+    - elasticfilesystem
+    - kinesis
+    - lambda
+    - rds
+    - secretsmanager
+    - s3
     Default: ALL_SERVICES
   pKeySpec:
     Description: 'Specify the type of the CMK.'
     Type: String
     AllowedValues:
-      - SYMMETRIC_DEFAULT
-      - RSA_2048
-      - RSA_3072
-      - RSA_4096
+    - SYMMETRIC_DEFAULT
+    - RSA_2048
+    - RSA_3072
+    - RSA_4096
     Default: SYMMETRIC_DEFAULT
   pKeyUsage:
     Description: 'Which cryptographic operations should the CMK support?'
     Type: String
     AllowedValues:
-      - ENCRYPT_DECRYPT
-      - SIGN_VERIFY
+    - ENCRYPT_DECRYPT
+    - SIGN_VERIFY
     Default: ENCRYPT_DECRYPT
-  pKeyStatus:
-    Description: 'Specify the state of the CMK.'
+  pKeystatus:
+    Description: 'Specifies whether the KMS key is enabled or Disabled. Disabled KMS keys cannot be used in cryptographic operation'
     Type: String
     AllowedValues:
-      - enabled
-      - disabled
-    Default: enabled
+    - Enabled
+    - Disabled
+    Default: Enabled
   pPendingWindowInDays:
-    Description: 'Specifies the number of days (between 7 to 30) in the waiting period before AWS KMS deletes this KMS key'
+    Description: 'Specifies the number of days in the waiting period before AWS KMS deletes a KMS key that has been removed from a CloudFormation stack. The default value is 30 days. '
     Type: Number
-
+    AllowedValues:
+    - 7
+    - 10
+    - 15
+    - 20
+    - 25
+    - 30
+    Default: 30       
 Conditions:
   cServiceAllServices: !Equals [!Ref pService, 'ALL_SERVICES']
-  cKeyStatus: !Equals [!Ref pKeyStatus, 'enabled']
+  cService: !Not [!Equals [!Ref pService, 'ALL_SERVICES']]
   cSymmetricKey: !Equals [!Ref pKeySpec, 'SYMMETRIC_DEFAULT']
-  cPendingWindowInDays: !Not [!Equals [ " ", !Ref pPendingWindowInDays ]]
+  cKeystatus: !Equals [!Ref pKeystatus, "Enabled"]
 Resources:
-  Key:
+  rKey:
     Type: 'AWS::KMS::Key'
     Properties:
       EnableKeyRotation: !If [cSymmetricKey, true, false]
       KeySpec: !Ref pKeySpec
       KeyUsage: !Ref pKeyUsage
-      Enabled: !If [cKeyStatus, true, false]
-#      PendingWindowInDays: 
-#        'Fn::If':
-#          - cPendingWindowInDays
-#          - !Ref pPendingWindowInDays
-#          - !Ref AWS::NoValue      
+      Enabled: !If [cKeystatus, true, false]
+      PendingWindowInDays: !Ref pPendingWindowInDays
       KeyPolicy:
         Version: '2012-10-17'
         Statement:
@@ -73,6 +82,26 @@ Resources:
             AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
           Action: 'kms:*'
           Resource: '*'
+          
+        - !If
+          - cService
+          - Effect: Allow
+            Principal:
+              AWS: '*'
+            Action:
+            - 'kms:Encrypt'
+            - 'kms:Decrypt'
+            - 'kms:ReEncrypt*'
+            - 'kms:GenerateDataKey*'
+            - 'kms:CreateGrant'
+            - 'kms:ListGrants'
+            - 'kms:DescribeKey'
+            Resource: '*'
+            Condition:
+              StringEquals:
+                'kms:CallerAccount': !Ref 'AWS::AccountId'
+                'kms:ViaService': !Sub '${pService}.${AWS::Region}.amazonaws.com'
+          - !Ref 'AWS::NoValue'
         - !If
           - cServiceAllServices
           - Effect: Allow
@@ -91,20 +120,22 @@ Resources:
               StringEquals:
                 'kms:CallerAccount': !Ref 'AWS::AccountId'
           - !Ref 'AWS::NoValue'
-  KeyAlias:
+  rKeyAlias:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Type: 'AWS::KMS::Alias'
     Properties:
       AliasName: !Sub 'alias/${AWS::StackName}'
-      TargetKeyId: !Ref Key
+      TargetKeyId: !Ref rKey
 
 Outputs:
-  KeyId:
+  oKeyId:
     Description: 'Key id.'
-    Value: !Ref Key
+    Value: !Ref rKey
     Export:
-      Name: !Sub '${AWS::StackName}-KeyId'
-  KeyArn:
+      Name: !Sub '${AWS::StackName}-oKeyId'
+  oKeyArn:
     Description: 'Key ARN.'
-    Value: !GetAtt 'Key.Arn'
+    Value: !GetAtt 'rKey.Arn'
     Export:
-      Name: !Sub '${AWS::StackName}-KeyArn'
+      Name: !Sub '${AWS::StackName}-oKeyArn'
