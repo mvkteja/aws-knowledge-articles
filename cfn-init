@@ -1,0 +1,34 @@
+  WebServerHost:
+    Type: AWS::EC2::Instance
+    Metadata:
+      Comment: Install a simple PHP application
+      AWS::CloudFormation::Init:
+        config:
+          commands:
+            00_setup_aws_ssm_agent:
+              command: !Sub |
+                dpkg -i /tmp/amazon-ssm-agent.deb
+                systemctl enable amazon-ssm-agent.service
+                service amazon-ssm-agent restart
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT10M
+    Properties:
+      ImageId: ami-a4c7edb2
+      KeyName:
+        Ref: KeyName
+      InstanceType: t2.micro
+      SecurityGroups:
+      - Ref: WebServerSecurityGroup
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/bash -xe
+            # Get the latest CloudFormation package
+            yum update -y aws-cfn-bootstrap
+            # Start cfn-init
+            /opt/aws/bin/cfn-init -s ${AWS::StackId} -r WebServerHost --region ${AWS::Region} || error_exit 'Failed to run cfn-init'
+            # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
+            /opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
+            # All done so signal success
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource WebServerHost --region ${AWS::Region}
